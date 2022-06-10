@@ -3,6 +3,8 @@
 @author: Nieto Nicolás
 @email: nnieto@sinc.unl.edu.ar
 """
+import numpy as np
+
 
 ## Distance pack
 def distance_to_hyperplane(X,clf):
