@@ -3,7 +3,10 @@
 @author: Nieto Nicolás
 @email: nnieto@sinc.unl.edu.ar
 """
+import os
 import numpy as np
+import pandas as pd
+from sklearn.metrics import f1_score
 from Pruebas_Nico_OT.Distance_functions import penalized_coupling
 
 #  Auxiliar Functions
@@ -32,7 +35,7 @@ def split_data_umbalanced(X, Y, Balance, shuffle=False):
   return X_trn , Y_trn , X_val , Y_val
 
 
-def train_transport(ot_object,Xs, Xt, yt, ys, clf, k=0,wrong_cls=True,balanced_target=True ,balanced_source=True,metrica="acc",verbose=False,penalized="d"):
+def train_transport(ot_object,Xs, Xt, yt, ys,X_test,Y_test, clf, k=0,wrong_cls=True,balanced_target=True ,balanced_source=True,metrica="acc",verbose=False,penalized="d"):
 
   # Compute the new coupling with the penalized cost matrix
   G01 = penalized_coupling(Xs, Xt, yt, ys, clf=clf, k=k,wrong_cls=wrong_cls,balanced_target=balanced_target, balanced_source=balanced_source,penalized=penalized)
@@ -41,7 +44,7 @@ def train_transport(ot_object,Xs, Xt, yt, ys, clf, k=0,wrong_cls=True,balanced_t
   ot_object.coupling_ = G01
 
   # transport source samples onto target samples
-  T_source_lda = ot_emd.transform(Xs = X_test)
+  T_source_lda = ot_object.transform(Xs = X_test)
 
   if metrica=="acc":
 
@@ -58,9 +61,9 @@ def train_transport(ot_object,Xs, Xt, yt, ys, clf, k=0,wrong_cls=True,balanced_t
 
   return performance
 
-def name_array(name):
+def name_array(name,ref_array):
   name_ret= []
-  for n in range(acc_no_OT.shape[0]):
+  for n in range(ref_array.shape[0]):
     name_ret.append(name)
   return name_ret
 
@@ -84,7 +87,6 @@ def acomodate_df(df,compared_methods):
 
 
 def ensure_dir(dir_name):
-    import os
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
 
