@@ -4,7 +4,7 @@
 @email: nnieto@sinc.unl.edu.ar
 """
 import numpy as np
-from Distance_functions import penalized_coupling
+from Pruebas_Nico_OT.Distance_functions import penalized_coupling
 
 #  Auxiliar Functions
 def split_data_umbalanced(X, Y, Balance, shuffle=False):
