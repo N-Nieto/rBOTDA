@@ -4,7 +4,7 @@
 @email: nnieto@sinc.unl.edu.ar
 """
 import numpy as np
-
+import ot.plot
 
 ## Distance pack
 def distance_to_hyperplane(X,clf):
