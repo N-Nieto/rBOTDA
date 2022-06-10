@@ -7,7 +7,7 @@
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
-from Utilitys import ensure_dir
+from Pruebas_Nico_OT.Utilitys import *
 
 
 def plot_violin_pair_comparison(df,compared_methods,save_dir="",save_fig=False,prefix_name=""):
