@@ -93,7 +93,7 @@ def plot_lda_db(lda):
 
   Z = lda.predict_proba(np.c_[xx.ravel(), yy.ravel()])
   Z = Z[:, 1].reshape(xx.shape)
-  plt.contour(xx[:,0:2], yy, Z, [0.5], linewidths=2., colors='black')
+  plt.contour(xx, yy, Z, [0.5], linewidths=2., colors='black')
   return
   
 def plot_mean_lda(lda):
