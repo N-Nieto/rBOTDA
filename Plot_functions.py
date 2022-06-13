@@ -4,13 +4,18 @@
 @email: nnieto@sinc.unl.edu.ar
 """
 
+
+
+import numpy as np
+import pandas as pd
+import seaborn as sns
 import matplotlib.pyplot as plt
+
 from matplotlib import colors
+from Pruebas_Nico_OT.Utilitys import ensure_dir, acomodate_df, filter_df
+from statannot.statannot import add_stat_annotation
 
-from Pruebas_Nico_OT.Utilitys import *
-
-
-def plot_violin_pair_comparison(df,compared_methods,save_dir="",save_fig=False,prefix_name=""):
+def plot_violin_pair_comparison(df,compared_methods,subjects,save_dir="",save_fig=False,prefix_name=""):
 
   df_aux= df.copy()
   df_aux = filter_df(df_aux,compared_methods)
@@ -18,7 +23,6 @@ def plot_violin_pair_comparison(df,compared_methods,save_dir="",save_fig=False,p
   fig = plt.figure(figsize=[20,10])
 
   ax = fig.add_subplot(1, 1, 1)
-
 
   ax = sns.violinplot(data = df_aux, x= "Subject" , y = pd.to_numeric(df["Test Accuracy [%]"]),  ax = ax, hue = "Method",
                         scale = "width" ,split=True,inner = None)
@@ -44,33 +48,14 @@ def plot_violin_pair_comparison(df,compared_methods,save_dir="",save_fig=False,p
 
   return 
 
-def filter_df(df,compared_methods):
+def plot_violin_pair_comparison(df,compared_methods,subjects,save_dir="",save_fig=False,prefix_name=""):
+
   df_aux = df.copy()
-  filter = df_aux["Method"] == compared_methods[0] 
-  filter2 = df_aux["Method"] == compared_methods[1]
-  filter = filter  + filter2
-  df_aux = df_aux[filter]
-
-  return df_aux
-
-def acomodate_df(df,compared_methods):
-  df_aux = df.copy()
-  df_aux["Method"][df_aux["Method"]==compared_methods[1]] = 1
-  df_aux["Method"][df_aux["Method"]==compared_methods[0]] = 0
-
-  df_aux["Subject"]= pd.to_numeric(df_aux["Subject"])
-
-  return df_aux
-
-def plot_violin_pair_comparison(df,compared_methods,save_dir="",save_fig=False,prefix_name=""):
-
-  df_aux=df.copy()
   df_aux = filter_df(df_aux,compared_methods)
 
   fig = plt.figure(figsize=[20,10])
 
   ax = fig.add_subplot(1, 1, 1)
-
 
   ax = sns.violinplot(data = df_aux, x= "Subject" , y = pd.to_numeric(df["Test Accuracy [%]"]),  ax = ax, hue = "Method",
                         scale = "width" ,split=True,inner = None)
@@ -108,7 +93,7 @@ def plot_lda_db(lda):
 
   Z = lda.predict_proba(np.c_[xx.ravel(), yy.ravel()])
   Z = Z[:, 1].reshape(xx.shape)
-  plt.contour(xx, yy, Z, [0.5], linewidths=2., colors='black')
+  plt.contour(xx[:,0:2], yy, Z, [0.5], linewidths=2., colors='black')
   return
   
 def plot_mean_lda(lda):
