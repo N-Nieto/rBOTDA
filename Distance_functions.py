@@ -82,30 +82,36 @@ def balance_weights(y, w,relevance = []):
     if relevance == []:
       # Uniform relevance for each class
       relevance = 1/len(classes)*np.ones(classes.shape)
-    elif sum(relevance)==1:
+    elif not(sum(relevance)==1):
       raise Exception("Relevance vector needs to sum = 1")
-    elif relevance.shape == classes.shape:
-      raise Exception("Relevance vector needs to have the same shape as the number of classes")
-      
+
     # Initialize the new weigths
     w_final = np.zeros(w.shape)
-    
+    relevance = np.array(relevance)
+  
     for cl in classes:
-      rel = relevance[classes==cl]
+
+      mask = np.array(classes==cl)
+      rel = relevance[mask]
+
       # total points 
       w_cl = w.copy()
         
       # keep only the points for one class
       w_cl[y!=cl] = 0
       
+      # In the case that all points in one class have 0 weight (i.e. if all were missclassified)
       if sum(w_cl) == 0:
         w_cl =  np.ones((len(w_cl),)) / len(w_cl)
 
       # Normalilize the weights with respect to the relevance of the class and the total mass of the class
-      w_cl = w_cl / ( sum(w_cl) * rel )
       
+      w_cl = w_cl * rel / ( sum(w_cl) )
+
       # Sum the weight of the particular class to the final weight vector
       w_final = w_final + w_cl
+    
+
     return w_final
 
 def deal_with_wrong_classified_point(Xt,yt,clf, clf_retrain, wrong_cls, ot_method):
