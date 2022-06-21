@@ -35,16 +35,13 @@ def split_data_umbalanced(X, Y, Balance, shuffle=False):
   return X_trn , Y_trn , X_val , Y_val
 
 
-def train_transport(ot_object,Xs, Xt, yt, ys,X_test,Y_test, clf, k=0,wrong_cls=True,balanced_target=True ,balanced_source=True,metrica="acc",verbose=False,penalized="d"):
+def train_transport(Xs, Xt, yt, ys,X_test,Y_test, clf, k=0,wrong_cls=True,balanced_target=[] ,balanced_source=[],metrica="acc",verbose=False,penalized="p",clf_retrain=False):
 
   # Compute the new coupling with the penalized cost matrix
-  G01 = penalized_coupling(Xs, Xt, yt, ys, clf=clf, k=k,wrong_cls=wrong_cls,balanced_target=balanced_target, balanced_source=balanced_source,penalized=penalized)
-
-  # Replace the coupling
-  ot_object.coupling_ = G01
+  ot_obj, clf, k = penalized_coupling(Xs, ys, Xt, yt, clf=clf, k=k,wrong_cls=wrong_cls,balanced_target=balanced_target, balanced_source=balanced_source,penalized=penalized,clf_retrain=clf_retrain)
 
   # transport source samples onto target samples
-  T_source_lda = ot_object.transform(Xs = X_test)
+  T_source_lda = ot_obj.transform(Xs = X_test)
 
   if metrica=="acc":
 
