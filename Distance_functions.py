@@ -220,9 +220,16 @@ def compute_coupling(ot_method, a_final, b_final, M, Xs, Xt, reg_e, eta):
 def delete_wrong_classified(clf,X,Y):
   # Make a prediction
   Y_pred = clf.predict(X)
-  # Delete the data missclassified
-  X = X[Y==Y_pred]
-  Y = Y[Y==Y_pred]
+
+  # Check if we do not delete all points for one class
+  Y_test = Y[Y==Y_pred]
+  
+  if len(np.unique(Y_test))<2:
+    Warning("Retrain not possible")
+  else:
+    # Delete the data missclassified
+    X = X[Y==Y_pred]
+    Y = Y[Y==Y_pred]
 
   return X, Y
 
