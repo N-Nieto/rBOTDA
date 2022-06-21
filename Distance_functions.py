@@ -114,10 +114,11 @@ def balance_weights(y, w,relevance = []):
 
     return w_final
 
-def deal_with_wrong_classified_point(Xt,yt,clf, clf_retrain, wrong_cls, ot_method):
+def deal_with_wrong_classified_point(Xt, yt, Xs, clf, clf_retrain, wrong_cls, ot_method):
+  # Initialize classifier
+  clf.fit(Xt,yt)
   # Delete the wrong classified point from the analysis and
   if clf_retrain:
-    clf.fit(Xt,yt)
     Xt, yt = delete_wrong_classified(clf,Xt,yt)
     clf.fit(Xt,yt)
     
@@ -144,13 +145,13 @@ def deal_with_wrong_classified_point(Xt,yt,clf, clf_retrain, wrong_cls, ot_metho
 
   return Xt, yt, clf, a, b
 
-def compute_penalization(Xt,clf,b, k,penalized):
+def compute_penalization(Xt, clf, b, k, penalized):
     # Calculate the distance of each point to lda decision straight
   if penalized == "distance" or penalized == "d":
       Q = Q_matix(Xt, clf, k=k)
       
   elif penalized == "proba" or penalized == "p":
-      Q = Proba_matix(Xt, clf,k=k)
+      Q = Proba_matix(Xt, clf, k=k)
   else:
       raise Exception("Penalized not supported")
   
@@ -215,11 +216,21 @@ def compute_coupling(ot_method, a_final, b_final, M, Xs, Xt, reg_e, eta):
       raise Exception("OT method not supported")
   return G0
 
-def penalized_coupling(Xs, ys, Xt, yt,  clf, k=1, metric="euclidean", penalized="p", ot_method="emd", wrong_cls=True, balanced_target=[], balanced_source=[], clf_retrain=False, reg_e=1, eta = 0.1):
+
+def delete_wrong_classified(clf,X,Y):
+  # Make a prediction
+  Y_pred = clf.predict(X)
+  # Delete the data missclassified
+  X = X[Y==Y_pred]
+  Y = Y[Y==Y_pred]
+
+  return X, Y
+
+def penalized_coupling(Xs, ys, Xt, yt, clf, k = -10, metric = "euclidean", penalized = "p", ot_method = "emd", wrong_cls=True, balanced_target=[], balanced_source=[], clf_retrain=False, reg_e=1, eta = 0.1):
   """
     Returns
     -------
-    G0 :  ((ns x nt) ndarray) – Optimal transportation matrix for the given parameters
+    ot_obj :  Optimal transport instance
     """
   # Data sanity check
   if Xs.shape[0]!=ys.shape[0]:
@@ -229,7 +240,19 @@ def penalized_coupling(Xs, ys, Xt, yt,  clf, k=1, metric="euclidean", penalized=
     raise Exception("Missmach target samples")
 
   # Deal with wrong classified point in the target domain
-  Xt, yt, clf, a, b =  deal_with_wrong_classified_point(Xt, yt, clf, clf_retrain, wrong_cls, ot_method)
+  Xt, yt, clf, a, b =  deal_with_wrong_classified_point(Xt, yt, Xs, clf, clf_retrain, wrong_cls, ot_method)
+
+  # Create OT object
+  ot_obj = ot.da.EMDTransport(metric=metric)
+
+  # Fit the object to the data
+  ot_obj = ot_obj.fit(Xs=Xs, Xt=Xt)
+
+  # Pass a negative value for search the best k until the passed value
+  if k<0:
+    k = best_k(ot_obj, Xs, ys, Xt, yt, clf, -k, metric, penalized, ot_method, wrong_cls, balanced_target, balanced_source, clf_retrain, reg_e, eta)
+  else:
+    k = k
 
   # Change the weights of the target points with respect a penalization
   b = compute_penalization(Xt, clf, b, k, penalized)
@@ -243,39 +266,27 @@ def penalized_coupling(Xs, ys, Xt, yt,  clf, k=1, metric="euclidean", penalized=
   # Compute coupling with different OT methods
   G0 = compute_coupling(ot_method, a, b, M, Xs, Xt, reg_e, eta)
 
-  if clf_retrain:
-    return G0, clf
-  
-  else:
-    return G0
+  # Replace the coupling with the penalized one
+  ot_obj.coupling_ = G0
 
-def delete_wrong_classified(clf,X,Y):
-  # Make a prediction
-  Y_pred = clf.predict(X)
-  # Delete the data missclassified
-  X = X[Y==Y_pred]
-  Y = Y[Y==Y_pred]
-
-  return X, Y
+  return  ot_obj, clf, k
 
 
-def best_k(ot_emd,Xs, ys, Xt, yt, clf, search=23, metric="euclidean", penalized="p", ot_method="emd", wrong_cls=True, balanced_target=[], balanced_source=[], clf_retrain=False, reg_e=1, eta = 0.1):
+
+def best_k(ot_obj, Xs, ys, Xt, yt, clf, search, metric, penalized, ot_method, wrong_cls, balanced_target, balanced_source, clf_retrain, reg_e, eta):
   # Initialization
   acc = 0
 
   for k in range(search):
     # Compute the new coupling with the penalized cost matrix
-    G01 = penalized_coupling(Xs, ys, Xt, yt,  clf, k=k, metric=metric,penalized=penalized, ot_method=ot_method, wrong_cls=wrong_cls, balanced_target=balanced_target, balanced_source=balanced_source, clf_retrain=clf_retrain, reg_e=reg_e, eta = eta)
-
-    # Replace the coupling
-    ot_emd.coupling_ = G01
+    ot_obj, clf_rt, k = penalized_coupling(Xs, ys, Xt, yt,  clf, k, metric, penalized, ot_method,wrong_cls, balanced_target, balanced_source, clf_retrain, reg_e, eta)
 
     # Transport source samples onto target samples
-    T_Xs = ot_emd.transform(Xs=Xs)
+    T_Xs = ot_obj.transform(Xs=Xs)
     
     # Compute accuracy
-    acc = np.append(acc,clf.score(T_Xs,ys))
-  
+    acc = np.append(acc, clf_rt.score(T_Xs,ys))
+
   # Delete initialization
   acc = np.delete(acc,0)
   # Get the max accuracy
