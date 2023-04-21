@@ -194,7 +194,7 @@ def compute_balance_weights(a,b,ys,yt,balanced_source,balanced_target):
   return a_final , b_final 
 
 
-def compute_coupling(ot_method, a_final, b_final, M, Xs, Xt, reg_e, eta, ys=None):
+def compute_coupling(ot_method, a_final, b_final, M, Xs, Xt, reg_e, eta, ys):
 
   # Compute coupling
   if ot_method == "emd":
