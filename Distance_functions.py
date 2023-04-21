@@ -271,7 +271,7 @@ def penalized_coupling(Xs, ys, Xt, yt, clf, k = -10, metric = "euclidean", penal
   M = ot.dist(Xs, Xt, metric = metric)
 
   # Compute coupling with different OT methods
-  G0 = compute_coupling(ot_method, a, b, M, Xs, Xt, reg_e, eta)
+  G0 = compute_coupling(ot_method, a, b, M, Xs, Xt, reg_e, eta, ys)
 
   # Replace the coupling with the penalized one
   ot_obj.coupling_ = G0
