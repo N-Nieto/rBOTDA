@@ -37,7 +37,8 @@ def split_data_unbalanced(X, Y, Balance, shuffle=False):
 
 def train_transport(Xs, Xt, yt, ys, X_test, Y_test, clf, k=0, wrong_cls=True,
                     balanced_target=[], balanced_source=[], metrica="acc",
-                    verbose=False, penalized="p", clf_retrain=False):
+                    verbose=False, penalized="p", clf_retrain=False,
+                    ot_method="emd"):
 
     # Compute the new coupling with the penalized cost matrix
     ot_obj, clf, k = penalized_coupling(Xs, ys, Xt, yt, clf=clf, k=k,
@@ -45,7 +46,8 @@ def train_transport(Xs, Xt, yt, ys, X_test, Y_test, clf, k=0, wrong_cls=True,
                                         balanced_target=balanced_target,
                                         balanced_source=balanced_source,
                                         penalized=penalized,
-                                        clf_retrain=clf_retrain)
+                                        clf_retrain=clf_retrain,
+                                        ot_method=ot_method)
 
     # transport source samples onto target samples
     T_source_lda = ot_obj.transform(Xs=X_test)

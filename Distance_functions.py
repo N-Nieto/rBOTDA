@@ -205,10 +205,6 @@ def compute_coupling(ot_method, a_final, b_final, M, Xs, Xt,
     if ot_method == "emd":
         G0 = ot.lp.emd(a_final, b_final, M)
 
-    elif ot_method == "emd2":
-        G0 = ot.lp.emd2(a_final, b_final, M, return_matrix=True)
-        G0 = G0[1]['G']
-
     elif ot_method == "sinkhorn" or ot_method == "s":
         G0 = ot.sinkhorn(a=a_final, b=b_final, M=M, reg=reg_e)
 
@@ -262,10 +258,9 @@ def penalized_coupling(Xs, ys, Xt, yt, clf, k=-10, metric="euclidean",
                                                          wrong_cls, ot_method)
 
     # Create OT object
-    ot_obj = ot.da.EMDTransport(metric=metric)
-
+    ot_obj = initialize_ot_obj(ot_method, metric)
     # Fit the object to the data
-    ot_obj = ot_obj.fit(Xs=Xs, Xt=Xt)
+    ot_obj = ot_obj.fit(Xs=Xs, ys=ys, Xt=Xt, yt=yt)
 
     # Pass a negative value for search the best k until the passed value
     if k < 0:
@@ -290,6 +285,26 @@ def penalized_coupling(Xs, ys, Xt, yt, clf, k=-10, metric="euclidean",
     ot_obj.coupling_ = G0
 
     return ot_obj, clf, k
+
+
+def initialize_ot_obj(ot_method, metric, Xs, Xt, ys, yt):
+
+    # Compute coupling
+    if ot_method == "emd":
+        ot_obj = ot.da.EMDTransport(metric=metric)
+
+    elif ot_method == "sinkhorn" or ot_method == "s":
+        ot_obj = ot.da.SinkhornLpl1Transport(metric=metric)
+
+    elif ot_method == "sinkhorn_gl" or ot_method == "s_gl":
+        ot_obj = ot.da.SinkhornL1l2Transport(metric=metric)
+
+    elif ot_method == "emd_laplace" or ot_method == "emd_l":
+        ot_obj = ot.da.EMDLaplaceTransport(metric=metric)
+    else:
+        raise RuntimeError("OT method not supported")
+
+    return ot_obj
 
 
 def best_k(ot_obj, Xs, ys, Xt, yt, clf, search, metric, penalized, ot_method,
