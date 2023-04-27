@@ -287,7 +287,7 @@ def penalized_coupling(Xs, ys, Xt, yt, clf, k=-10, metric="euclidean",
     return ot_obj, clf, k
 
 
-def initialize_ot_obj(ot_method, metric, Xs, Xt, ys, yt):
+def initialize_ot_obj(ot_method, metric):
 
     # Compute coupling
     if ot_method == "emd":
