@@ -20,7 +20,7 @@ def distance_to_hyperplane(X, clf):
     return d[:, 0]
 
 
-def P_matix(X, clf, k=1):
+def P_matix(X, clf, k):
     # Compute distance
     d = distance_to_hyperplane(X, clf)
     d = np.power(d, k)
@@ -34,7 +34,7 @@ def P_matix(X, clf, k=1):
     return P_mat
 
 
-def Q_matix(X, clf, k=1):
+def Q_matix(X, clf, k):
     d = distance_to_hyperplane(X, clf)
     d = np.power(d, k)
     nom = np.prod(np.power(d, 1/len(d)))
@@ -45,9 +45,10 @@ def Q_matix(X, clf, k=1):
     return Q_mat
 
 
-def Proba_matix(X, clf, k=1):
-
+def Proba_matix(X, clf, k):
+    # Get the Proba for each point
     d = clf.predict_proba(X)
+    # Substract the mean for each point and compute the absolute value
     d = np.abs(d - np.mean(d)*np.ones(d.shape))
     d = d.sum(axis=1)
     d = np.power(d, k)
@@ -119,16 +120,15 @@ def deal_with_wrong_classified_point(Xt, yt, Xs, clf,
                                      clf_retrain, wrong_cls, ot_method):
     # Initialize classifier
     clf.fit(Xt, yt)
-    # Delete the wrong classified point from the analysis and
+    # Delete the wrong classified point from the analysis
     if clf_retrain:
         Xt, yt = delete_wrong_classified(clf, Xt, yt)
         clf.fit(Xt, yt)
 
     # Start with Source uniform weights
-    a = np.ones((len(Xs),)) / len(Xs)
-
+    a = np.ones((Xs.shape[0]),) / (Xs.shape[0])
     # Start with Target uniform weights
-    b = np.ones((len(Xt),)) / len(Xt)
+    b = np.ones(((Xt.shape[0]),)) / (Xt.shape[0])
 
     # Do not assign mass to missclassified points
     if wrong_cls:
@@ -138,7 +138,7 @@ def deal_with_wrong_classified_point(Xt, yt, Xs, clf,
         # If all the datapoins for one classe were missclassified
         if sum(b) == np.NaN:
             # Target uniform weights
-            b = np.ones((len(Xt),)) / len(Xt)
+            b = np.ones(((Xt.shape[0]),)) / (Xt.shape[0])
 
         # Replace mass=0 for Grup Lasso method
         if ot_method == "sinkhorn_gl" or ot_method == "s_gl":
@@ -151,9 +151,9 @@ def deal_with_wrong_classified_point(Xt, yt, Xs, clf,
 def compute_penalization(Xt, clf, b, k, penalized):
     # Calculate the distance of each point to lda decision straight
     if penalized == "distance" or penalized == "d":
-        Q = Q_matix(Xt, clf, k=k)
+        Q = Q_matix(X=Xt, clf=clf, k=k)
     elif penalized == "proba" or penalized == "p":
-        Q = Proba_matix(Xt, clf, k=k)
+        Q = Proba_matix(X=Xt, clf=clf, k=k)
     else:
         raise Exception("Penalized not supported")
 
@@ -164,7 +164,7 @@ def compute_penalization(Xt, clf, b, k, penalized):
 
 
 def compute_balance_weights(a, b, ys, yt,
-                            balanced_source, balanced_target):
+                            balanced_source, balanced_target, k):
     # Balance target
     # Chek if empy or False
     if not (balanced_target):
@@ -172,8 +172,10 @@ def compute_balance_weights(a, b, ys, yt,
         if balanced_target == []:
             b_final = balance_weights(yt, b, balanced_target)
         # If False uniform balance
-        else:
+        elif k > 0:
             b_final = b/sum(b)
+        elif k == 0:
+            b_final = b
     # If not False or Empty check if the first element is int or float
     elif isinstance(balanced_target[0], (int, float)):
         b_final = balance_weights(yt, b, balanced_target)
@@ -198,22 +200,21 @@ def compute_balance_weights(a, b, ys, yt,
     return a_final, b_final
 
 
-def compute_coupling(ot_method, a_final, b_final, M, Xs, Xt,
+def compute_coupling(ot_method, a, b, M, Xs, Xt,
                      reg_e, eta, ys=[]):
-
     # Compute coupling
     if ot_method == "emd":
-        G0 = ot.lp.emd(a_final, b_final, M)
+        G0 = ot.da.emd(a=a, b=b, M=M)
 
     elif ot_method == "sinkhorn" or ot_method == "s":
-        G0 = ot.sinkhorn(a=a_final, b=b_final, M=M, reg=reg_e)
+        G0 = ot.da.sinkhorn_lpl1_mm(a=a, labels_a=ys, b=b, M=M, reg=reg_e)
 
     elif ot_method == "sinkhorn_gl" or ot_method == "s_gl":
-        G0 = ot.da.sinkhorn_l1l2_gl(a_final, ys, b_final, M,
+        G0 = ot.da.sinkhorn_l1l2_gl(a=a, labels_a=ys, b=b, M=M,
                                     reg=reg_e, eta=eta)
 
     elif ot_method == "emd_laplace" or ot_method == "emd_l":
-        G0 = ot.da.emd_laplace(a_final, b_final, Xs, Xt, M, eta=eta)
+        G0 = ot.da.emd_laplace(a=a, b=b, Xs=Xs, Xt=Xt, M=M, eta=eta)
     else:
         raise RuntimeError("OT method not supported")
     return G0
@@ -239,7 +240,8 @@ def delete_wrong_classified(clf, X, Y):
 def penalized_coupling(Xs, ys, Xt, yt, clf, k=-10, metric="euclidean",
                        penalized="p", ot_method="emd", wrong_cls=True,
                        balanced_target=[], balanced_source=[],
-                       clf_retrain=False, reg_e=1, eta=0.1):
+                       clf_retrain=False, reg_e=1, eta=0.1,
+                       cost_norm=None, limit_max=10):
     """
       Returns
       -------
@@ -267,22 +269,28 @@ def penalized_coupling(Xs, ys, Xt, yt, clf, k=-10, metric="euclidean",
         k = best_k(ot_obj, Xs, ys, Xt, yt, clf, -k, metric, penalized,
                    ot_method, wrong_cls, balanced_target, balanced_source,
                    clf_retrain, reg_e, eta)
+        # Change the weights of the target points with respect a penalization
+        b = compute_penalization(Xt, clf, b, k, penalized)
     else:
         k = k
+        # Change the weights of the target points with respect a penalization
+        b = compute_penalization(Xt, clf, b, k, penalized)
 
-    # Change the weights of the target points with respect a penalization
-    b = compute_penalization(Xt, clf, b, k, penalized)
     # Balance weights
     a, b = compute_balance_weights(a, b, ys, yt,
-                                   balanced_source, balanced_target)
+                                   balanced_source, balanced_target, k)
     # Compute cost matrix
-    M = ot.dist(Xs, Xt, metric=metric)
+    M = compute_cost_matrix(Xs=Xs, ys=ys, Xt=Xt, yt=yt, metric=metric,
+                            cost_norm=cost_norm, limit_max=limit_max)
 
     # Compute coupling with different OT methods
     G0 = compute_coupling(ot_method, a, b, M, Xs, Xt, reg_e, eta)
 
     # Replace the coupling with the penalized one
     ot_obj.coupling_ = G0
+    ot_obj.mu_t = b
+    ot_obj.mu_s = a
+    ot_obj.cost_ = M
 
     return ot_obj, clf, k
 
@@ -340,3 +348,28 @@ def best_k(ot_obj, Xs, ys, Xt, yt, clf, search, metric, penalized, ot_method,
 
 
 # %%
+
+def compute_cost_matrix(Xs, ys, Xt, yt, metric, cost_norm, limit_max):
+    # pairwise distance
+    M = ot.dist(Xs, Xt, metric=metric)
+    M = ot.utils.cost_normalization(M, cost_norm)
+
+    if (ys is not None) and (yt is not None):
+
+        if limit_max != np.infty:
+            limit_max = limit_max * np.max(M)
+
+        # assumes labeled source samples occupy the first rows
+        # and labeled target samples occupy the first columns
+        classes = [c for c in np.unique(ys) if c != -1]
+        for c in classes:
+            idx_s = np.where((ys != c) & (ys != -1))
+            idx_t = np.where(yt == c)
+
+            # all the coefficients corresponding to a source sample
+            # and a target sample :
+            # with different labels get a infinite
+            for j in idx_t[0]:
+                M[idx_s[0], j] = limit_max
+
+    return M
