@@ -207,7 +207,7 @@ def compute_coupling(ot_method, a, b, M, Xs, Xt,
         G0 = ot.da.emd(a=a, b=b, M=M)
 
     elif ot_method == "sinkhorn" or ot_method == "s":
-        G0 = ot.da.SinkhornTransport(a=a, labels_a=ys, b=b, M=M, reg=reg_e)
+        G0 = ot.da.sinkhorn(a=a, labels_a=ys, b=b, M=M, reg=reg_e)
 
     elif ot_method == "sinkhorn_gl" or ot_method == "s_gl":
         G0 = ot.da.sinkhorn_l1l2_gl(a=a, labels_a=ys, b=b, M=M,
