@@ -260,7 +260,7 @@ def penalized_coupling(Xs, ys, Xt, yt, clf, k=-10, metric="euclidean",
                                                          wrong_cls, ot_method)
 
     # Create OT object
-    ot_obj = initialize_ot_obj(ot_method, metric)
+    ot_obj = initialize_ot_obj(ot_method, metric, reg_e, eta)
     # Fit the object to the data
     ot_obj = ot_obj.fit(Xs=Xs, ys=ys, Xt=Xt, yt=yt)
 
@@ -272,7 +272,6 @@ def penalized_coupling(Xs, ys, Xt, yt, clf, k=-10, metric="euclidean",
         # Change the weights of the target points with respect a penalization
         b = compute_penalization(Xt, clf, b, k, penalized)
     else:
-        k = k
         # Change the weights of the target points with respect a penalization
         b = compute_penalization(Xt, clf, b, k, penalized)
 
@@ -295,17 +294,18 @@ def penalized_coupling(Xs, ys, Xt, yt, clf, k=-10, metric="euclidean",
     return ot_obj, clf, k
 
 
-def initialize_ot_obj(ot_method, metric):
+def initialize_ot_obj(ot_method, metric, reg_e, eta):
 
     # Compute coupling
     if ot_method == "emd":
         ot_obj = ot.da.EMDTransport(metric=metric)
 
     elif ot_method == "sinkhorn" or ot_method == "s":
-        ot_obj = ot.da.SinkhornLpl1Transport(metric=metric)
+        ot_obj = ot.da.SinkhornTransport(metric=metric, reg_e=reg_e)
 
     elif ot_method == "sinkhorn_gl" or ot_method == "s_gl":
-        ot_obj = ot.da.SinkhornL1l2Transport(metric=metric)
+        ot_obj = ot.da.SinkhornL1l2Transport(metric=metric, reg_e=reg_e,
+                                             reg_cl=eta)
 
     elif ot_method == "emd_laplace" or ot_method == "emd_l":
         ot_obj = ot.da.EMDLaplaceTransport(metric=metric)
@@ -346,8 +346,6 @@ def best_k(ot_obj, Xs, ys, Xt, yt, clf, search, metric, penalized, ot_method,
 
     return pos
 
-
-# %%
 
 def compute_cost_matrix(Xs, ys, Xt, yt, metric, cost_norm, limit_max):
     # pairwise distance

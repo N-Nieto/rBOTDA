@@ -49,7 +49,7 @@ def train_transport(Xs, Xt, yt, ys, X_test, Y_test, clf, k=0, wrong_cls=True,
                                         clf_retrain=clf_retrain,
                                         ot_method=ot_method)
 
-    # transport source samples onto target samples
+    # transport source samples to target samples
     T_source_lda = ot_obj.transform(Xs=X_test)
 
     if metrica == "acc":
