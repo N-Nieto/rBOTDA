@@ -39,7 +39,7 @@ def data_check(Xs, Xt, ys=[], yt=[]):
 
 
 class rBOTDA():
-    def __init__(self, ot_method="emd", k=5, metric="euclidean",
+    def __init__(self, k, ot_method="emd", metric="euclidean",
                  penalized_type="p", wrong_cls=True,
                  balanced_target=[], balanced_source=[],
                  reg_e=1, eta=0.1,
@@ -68,6 +68,7 @@ class rBOTDA():
         # Type of penalization (Distance or classifier probability)
         self.penalized_type = penalized_type
         # Penalization intensity. Is and hyperparameter to tune
+        # If k=0 no penalization is applied
         self.k = k
         # If removing points wrong classified before applied transport.
         # Poinsts will be assigned with 0 mass.
