@@ -24,7 +24,9 @@ def initialize_ot_obj(self):
     return
 
 
-def compute_cost_matrix(self, Xs, ys, Xt, yt):
+def compute_cost_matrix(self, Xs, Xt, yt, ys):
+    if not self.cost_supervised:
+        ys = None
     # pairwise distance
     M = ot.dist(Xs, Xt, metric=self.metric)
     M = ot.utils.cost_normalization(M, self.cost_norm)
@@ -50,6 +52,10 @@ def compute_cost_matrix(self, Xs, ys, Xt, yt):
 
 
 def compute_coupling(self, a, b, M, Xs, Xt, ys):
+
+    if not self.coupling_supervised:
+        ys = None
+
     # Compute coupling
     if self.ot_method == "emd":
         G0 = ot.da.emd(a=a, b=b, M=M)

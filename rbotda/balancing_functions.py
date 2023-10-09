@@ -66,7 +66,7 @@ def deal_with_wrong_classified_point(self, a, b, Xt, yt, clf):
     return Xt, yt, a, b
 
 
-def compute_balance_weights(self, a, b, ys, yt):
+def compute_balance_weights(self, a, b, yt, ys):
     # Balance target
     # Chek if empy or False
     if not (self.balanced_target):

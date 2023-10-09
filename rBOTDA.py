@@ -43,7 +43,9 @@ class rBOTDA():
                  penalized_type="p", wrong_cls=True,
                  balanced_target=[], balanced_source=[],
                  reg_e=1, eta=0.1,
-                 cost_norm=None, limit_max=10):
+                 cost_norm=None, limit_max=10,
+                 cost_supervised=True,
+                 coupling_supervised=True):
 
         # check naming
         naming_check(ot_method=ot_method, metric=metric,
@@ -60,7 +62,8 @@ class rBOTDA():
         # Cost norm and limit max of OT
         self.cost_norm = cost_norm
         self.limit_max = limit_max
-
+        self.cost_supervised = cost_supervised
+        self.coupling_supervised = coupling_supervised
         # Initialize any hyperparameters for penalization
         # Type of penalization (Distance or classifier probability)
         self.penalized_type = penalized_type
@@ -83,7 +86,48 @@ class rBOTDA():
 
         initialize_ot_obj(self)
 
-    def fit(self, Xs, Xt, clf, ys=None, yt=None):
+    def fit_tl(self, Xs, Xt, clf, yt=None):
+        # Fit optimal transport method with
+
+        """
+        Returns
+        -------
+        ot_obj :  Optimal transport instance
+        """
+        # Check consistency
+        data_check(Xs=Xs, Xt=Xt, ys=None, yt=yt)
+
+        a, b = initialize_sample_weights(Xt, Xs)
+        # If target (train), labels are provided, then enter to the function
+        if (yt is not None):
+            # Deal with wrong classified point in the target domain
+            Xt, yt, a, b = deal_with_wrong_classified_point(self, a, b,
+                                                            Xt, yt, clf)
+
+        # Fit the object to the data
+        self.ot_obj = self.ot_obj.fit(Xs=Xs, Xt=Xt, yt=yt)
+
+        # Change the weights of the target points with respect a penalization
+        b = compute_penalization(self, Xt, clf, b)
+
+        # Balance weights for Source and Target
+        a, b = compute_balance_weights(self, a, b, yt, ys=None)
+
+        # Compute cost matrix
+        M = compute_cost_matrix(self, Xs=Xs, Xt=Xt, yt=yt, ys=None)
+
+        # Compute coupling with different OT methods
+        G0 = compute_coupling(self, a, b, M, Xs, Xt, None)
+
+        # Replace the coupling with the penalized one
+        self.ot_obj.coupling_ = G0
+        self.ot_obj.mu_t = b
+        self.ot_obj.mu_s = a
+        self.ot_obj.cost_ = M
+
+        return self
+
+    def fit_tl_supervised(self, Xs, Xt, clf, ys=None, yt=None):
         # Fit optimal transport method with
 
         """
@@ -93,6 +137,7 @@ class rBOTDA():
         """
         # Check consistency
         data_check(Xs=Xs, Xt=Xt, ys=ys, yt=yt)
+
         a, b = initialize_sample_weights(Xt, Xs)
         # If target (train), labels are provided, then enter to the function
         if (yt is not None):
