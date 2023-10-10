@@ -18,7 +18,7 @@ np.random.seed(random_state)
 
 sys.path.append('/home/nnieto/Nico/OTclf_info/')
 
-from Pruebas_Nico_OT.Utilitys import split_data_unbalanced # noqa
+from Pruebas_Nico_OT.rbotda.Utilitys import split_data_unbalanced # noqa
 from rBOTDA import rBOTDA                                   # noqa
 
 # %%

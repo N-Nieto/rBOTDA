@@ -53,9 +53,6 @@ def compute_cost_matrix(self, Xs, Xt, yt, ys):
 
 def compute_coupling(self, a, b, M, Xs, Xt, ys):
 
-    if not self.coupling_supervised:
-        ys = None
-
     # Compute coupling
     if self.ot_method == "emd":
         G0 = ot.da.emd(a=a, b=b, M=M)

@@ -6,8 +6,6 @@
 import os
 import numpy as np
 import pandas as pd
-from sklearn.metrics import f1_score
-from Pruebas_Nico_OT.Distance_functions import penalized_coupling
 
 
 #  Auxiliar Functions
@@ -33,36 +31,6 @@ def split_data_unbalanced(X, Y, Balance, shuffle=False):
     Y_val = np.concatenate([Y_c1[Balance[0]::], Y_c2[Balance[1]::]])
 
     return X_trn, Y_trn, X_val, Y_val
-
-
-def train_transport(Xs, Xt, yt, ys, X_test, Y_test, clf, k=0, wrong_cls=True,
-                    balanced_target=[], balanced_source=[], metrica="acc",
-                    verbose=False, penalized="p", clf_retrain=False,
-                    ot_method="emd"):
-
-    # Compute the new coupling with the penalized cost matrix
-    ot_obj, clf, k = penalized_coupling(Xs, ys, Xt, yt, clf=clf, k=k,
-                                        wrong_cls=wrong_cls,
-                                        balanced_target=balanced_target,
-                                        balanced_source=balanced_source,
-                                        penalized=penalized,
-                                        clf_retrain=clf_retrain,
-                                        ot_method=ot_method)
-
-    # transport source samples to target samples
-    T_source_lda = ot_obj.transform(Xs=X_test)
-
-    if metrica == "acc":
-        performance = clf.score(T_source_lda, Y_test)
-
-    elif metrica == "F1":
-        y_pred = clf.predict(T_source_lda)
-        performance = f1_score(Y_test, y_pred)
-
-    if verbose:
-        print("K="+str(k)+":\t\t" + str(performance))
-
-    return performance
 
 
 def filter_df(df, compared_methods):

@@ -44,8 +44,7 @@ class rBOTDA():
                  balanced_target=[], balanced_source=[],
                  reg_e=1, eta=0.1,
                  cost_norm=None, limit_max=10,
-                 cost_supervised=True,
-                 coupling_supervised=True):
+                 cost_supervised=True):
 
         # check naming
         naming_check(ot_method=ot_method, metric=metric,
@@ -63,7 +62,6 @@ class rBOTDA():
         self.cost_norm = cost_norm
         self.limit_max = limit_max
         self.cost_supervised = cost_supervised
-        self.coupling_supervised = coupling_supervised
         # Initialize any hyperparameters for penalization
         # Type of penalization (Distance or classifier probability)
         self.penalized_type = penalized_type
@@ -120,7 +118,7 @@ class rBOTDA():
         # Compute coupling with different OT methods
         G0 = compute_coupling(self, a, b, M, Xs, Xt, None)
 
-        # Replace the coupling with the penalized one
+        # Replace the coupling with the penalized ones
         self.ot_obj.coupling_ = G0
         self.ot_obj.mu_t = b
         self.ot_obj.mu_s = a
