@@ -139,7 +139,7 @@ for kv in range(KF):
     rbotda.fit_tl_supervised(Xs=Xs, Xt=Xt, ys=ys, yt=yt, clf=clf)
     Xs_transform = rbotda.transform(Xs=X_test)
     performance = clf.score(Xs_transform, Y_test)
-    result_list.append(["rOT2_cost_no_sup", performance])
+    result_list.append(["rOT_all_balanced_cost_no_sup", performance])
 
     # rBOTDA, cost supervised
     rbotda = rBOTDA(k=0, ot_method=ot_method, wrong_cls=True,
@@ -149,7 +149,27 @@ for kv in range(KF):
     rbotda.fit_tl_supervised(Xs=Xs, Xt=Xt, ys=ys, yt=yt, clf=clf)
     Xs_transform = rbotda.transform(Xs=X_test)
     performance = clf.score(Xs_transform, Y_test)
-    result_list.append(["rOT2_cost_sup", performance])
+    result_list.append(["rOT_all_balanced_cost_sup", performance])
+
+    # rBOTDA, cost supervised
+    rbotda = rBOTDA(k=0, ot_method=ot_method, wrong_cls=True,
+                    balanced_source=False, balanced_target=[],
+                    cost_supervised=True)
+
+    rbotda.fit_tl_supervised(Xs=Xs, Xt=Xt, ys=ys, yt=yt, clf=clf)
+    Xs_transform = rbotda.transform(Xs=X_test)
+    performance = clf.score(Xs_transform, Y_test)
+    result_list.append(["rOT_cost_sup_target_balanced", performance])
+
+    # rBOTDA, cost supervised
+    rbotda = rBOTDA(k=0, ot_method=ot_method, wrong_cls=True,
+                    balanced_source=[], balanced_target=False,
+                    cost_supervised=True)
+
+    rbotda.fit_tl_supervised(Xs=Xs, Xt=Xt, ys=ys, yt=yt, clf=clf)
+    Xs_transform = rbotda.transform(Xs=X_test)
+    performance = clf.score(Xs_transform, Y_test)
+    result_list.append(["rOT2_cost_sup_source_balanced", performance])
 # %%
 _, ax = plt.subplots(1, 1, figsize=[30, 8])
 results = pd.DataFrame(result_list, columns=["method", "ACC"])
