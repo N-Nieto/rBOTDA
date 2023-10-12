@@ -26,7 +26,7 @@ def initialize_ot_obj(self):
 
 def compute_cost_matrix(self, Xs, Xt, yt, ys):
     if not self.cost_supervised:
-        ys = None
+        yt = None
     # pairwise distance
     M = ot.dist(Xs, Xt, metric=self.metric)
     M = ot.utils.cost_normalization(M, self.cost_norm)
@@ -51,21 +51,22 @@ def compute_cost_matrix(self, Xs, Xt, yt, ys):
     return M
 
 
-def compute_coupling(self, a, b, M, Xs, Xt, ys):
-
+def compute_backward_coupling(self, a, b, M, Xs, Xt, yt):
+    # This function computes the coupling in a backawrd way
+    # where the samples from target are move to the source
     # Compute coupling
     if self.ot_method == "emd":
-        G0 = ot.da.emd(a=a, b=b, M=M)
+        G0 = ot.da.emd(a=b, b=a, M=M)
 
     elif self.ot_method in ["sinkhorn", "s"]:
-        G0 = ot.da.sinkhorn(a=a, labels_a=ys, b=b, M=M, reg=self.reg_e)
+        G0 = ot.da.sinkhorn(a=b, labels_a=yt, b=a, M=M, reg=self.reg_e)
 
     elif self.ot_method in ["sinkhorn_gl", "s_gl"]:
-        G0 = ot.da.sinkhorn_l1l2_gl(a=a, labels_a=ys, b=b, M=M,
+        G0 = ot.da.sinkhorn_l1l2_gl(a=b, labels_a=yt, b=a, M=M,
                                     reg=self.reg_e, eta=self.eta)
 
     elif self.ot_method in ["emd_laplace", "emd_l"]:
-        G0 = ot.da.emd_laplace(a=a, b=b, Xs=Xs, Xt=Xt, M=M, eta=self.eta)
+        G0 = ot.da.emd_laplace(a=b, b=a, Xs=Xt, Xt=Xs, M=M, eta=self.eta)
     else:
         raise RuntimeError("OT method not supported")
     return G0

@@ -71,7 +71,7 @@ def distance_to_mean(X, Y):
     return dist
 
 
-def compute_penalization(self, Xt, clf, b):
+def compute_penalization(self, a, Xs, clf):
     """
     Compute the penalization with respect the classifier
     The penalization could be inversly proportional to the distance
@@ -80,13 +80,13 @@ def compute_penalization(self, Xt, clf, b):
     """
     # Calculate the distance of each point to lda decision straight
     if self.penalized_type in ["distance", "d"]:
-        Q = Q_matix(X=Xt, clf=clf, k=self.k)
+        Q = Q_matix(X=Xs, clf=clf, k=self.k)
     elif self.penalized_type in ["probability", "proba", "p"]:
-        Q = Proba_matix(X=Xt, clf=clf, k=self.k)
+        Q = Proba_matix(X=Xs, clf=clf, k=self.k)
     else:
         raise Exception("Penalization not supported")
 
     # change the point weight proportionaly to the computed score
-    b = np.dot(b, Q)
+    a = np.dot(a, Q)
 
-    return b
+    return a

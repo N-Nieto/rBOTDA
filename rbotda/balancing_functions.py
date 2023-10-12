@@ -38,7 +38,7 @@ def balance_weights(y, w, relevance=[]):
     return w_final
 
 
-def initialize_sample_weights(Xt, Xs):
+def initialize_uniform_weights(Xs, Xt):
     # Start with Source uniform weights
     a = np.ones((Xs.shape[0]),) / (Xs.shape[0])
     # Start with Target uniform weights
@@ -46,59 +46,8 @@ def initialize_sample_weights(Xt, Xs):
     return a, b
 
 
-def deal_with_wrong_classified_point(self, a, b, Xt, yt, clf):
-
-    # Do not assign mass to missclassified points
-    if self.wrong_cls:
-        Y_pred = clf.predict(Xt)
-        b[yt != Y_pred] = 0
-
-        # If all the datapoins for one classe were missclassified
-        if sum(b) == np.NaN:
-            # Target uniform weights
-            b = np.ones(((Xt.shape[0]),)) / (Xt.shape[0])
-
-        # Replace mass=0 for Grup Lasso method
-        if self.ot_method in ["sinkhorn_gl", "s_gl"]:
-            # Not suport mass==0
-            b[yt != Y_pred] = 1e-10
-
-    return Xt, yt, a, b
-
-
 def compute_balance_weights(self, a, b, ys, yt):
     # Balance target
-    # Chek if empy or False
-    if not (self.balanced_target):
-        # If empty use uniform relevance for each class
-        if (self.balanced_target == []):
-            if (yt is not None):
-                b_final = balance_weights(yt, b, self.balanced_target)
-            else:
-                print("Target not balanced as yt was not provided")
-                # If False uniform balance
-                if self.k > 0:
-                    b_final = b/sum(b)
-                elif self.k == 0:
-                    if self.wrong_cls:
-                        b_final = b/sum(b)
-                    else:
-                        b_final = b
-
-        # If False uniform balance
-        elif self.k > 0:
-            b_final = b/sum(b)
-        elif self.k == 0:
-            if self.wrong_cls:
-                b_final = b/sum(b)
-            else:
-                b_final = b
-    # If not False or Empty check if the first element is int or float
-    elif isinstance(self.balanced_target[0], (int, float)):
-        b_final = balance_weights(yt, b, self.balanced_target)
-    else:
-        raise Exception("Balance target not supported")
-    # Balance source
     # Chek if empy or False
     if not (self.balanced_source):
         # If empty use uniform relevance for each class
@@ -108,13 +57,44 @@ def compute_balance_weights(self, a, b, ys, yt):
             else:
                 print("Source not balanced as ys was not provided")
                 # If False uniform balance
+                if self.k > 0:
+                    a_final = a/sum(a)
+                elif self.k == 0:
+                    if self.wrong_cls:
+                        a_final = a/sum(a)
+                    else:
+                        a_final = a
+
+        # If False uniform balance
+        elif self.k > 0:
+            a_final = a/sum(a)
+        elif self.k == 0:
+            if self.wrong_cls:
+                a_final = a/sum(a)
+            else:
                 a_final = a
-        # If False not normalization
-        else:
-            a_final = a
     # If not False or Empty check if the first element is int or float
     elif isinstance(self.balanced_source[0], (int, float)):
         a_final = balance_weights(ys, a, self.balanced_source)
+    else:
+        raise Exception("Balance target not supported")
+    # Balance source
+    # Chek if empy or False
+    if not (self.balanced_target):
+        # If empty use uniform relevance for each class
+        if (self.balanced_target == []):
+            if (ys is not None):
+                b_final = balance_weights(yt, b, self.balanced_target)
+            else:
+                print("Source not balanced as ys was not provided")
+                # If False uniform balance
+                b_final = b
+        # If False not normalization
+        else:
+            b_final = b
+    # If not False or Empty check if the first element is int or float
+    elif isinstance(self.balanced_target[0], (int, float)):
+        b_final = balance_weights(yt, b, self.balanced_target)
     else:
         raise Exception("Balance source not supported")
 
@@ -136,3 +116,27 @@ def delete_wrong_classified(clf, X, Y):
         Y = Y[Y == Y_pred]
 
     return X, Y
+
+
+def deal_with_wrong_classified_point(Xs, ys, a, clf):
+    # Generate prediction over source (train data)
+    Y_pred = clf.predict(Xs)
+
+    # Check if we do not delete all points for one class
+    Y_check = ys[ys == Y_pred]
+
+    if len(np.unique(Y_check)) < 2:
+        Warning("All points for one class wrongly classified, continuing without removing wrong classified")    # noqa
+    else:
+
+        # Delet the points from the Xs, a and target
+        Xs = Xs[ys == Y_pred]
+        a = a[ys == Y_pred]
+        ys = ys[ys == Y_pred]
+
+        # If all the datapoins were missclassified
+        if sum(a) == np.NaN:
+            # Target uniform weights
+            a = np.ones(((Xs.shape[0]),)) / (Xs.shape[0])
+
+    return Xs, ys, a

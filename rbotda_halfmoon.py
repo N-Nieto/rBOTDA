@@ -22,16 +22,16 @@ X_data = data['X']
 X_data = X_data[:, 0:2]
 
 Y_data = data['Y']
-# Labels are in -1 +1, change it to 0 +1
+# Labels are in -1 +1, change it to 1 2
 Y_data = ((Y_data + 1) / 2)+1
 # %%
 # #### Variables
 
 # OT variables
-# Classifier is trained on TARGET, and learn to transpor from target to source
+# Classifier is trained on SOURCE, and learn to transpor from target to source
 Balance_test = [500, 500]    # Max 100 trials for each class
-Balance_source = [200, 200]  # Max 100 trials for each class
-Balance_target = [300, 300]  # Max 100 trials for each class
+Balance_source = [300, 300]  # Max 100 trials for each class
+Balance_target = [100, 100]  # Max 100 trials for each class
 # Which distance is used in the OT
 metric = "euclidean"
 # Type of penaliation
@@ -70,106 +70,37 @@ for kv in range(KF):
     # ### Split data
     X_trn, Y_trn, X_val_not_used, Y_val_not_used = split_data_unbalanced(
                                                     X_tr, Y_tr,
-                                                    Balance_target,
-                                                    shuffle=True)
-
-    X_val, Y_val, X_not_used, Y_not_used = split_data_unbalanced(
-                                                    X_test,
-                                                    Y_test,
                                                     Balance_source,
                                                     shuffle=True)
 
+    X_val, Y_val, X_test, Y_test = split_data_unbalanced(
+                                                    X_test,
+                                                    Y_test,
+                                                    Balance_target,
+                                                    shuffle=True)
+
     # Set Target and Source domains
-    Xs, ys = X_val, Y_val
-    Xt, yt = X_trn, Y_trn
+    Xs, ys = X_trn, Y_trn
+    Xt, yt = X_val, Y_val
 
     # ### Clasification
     # Train clasiffier
-    clf.fit(Xt, yt)
+    clf.fit(Xs, ys)
     # Compute acc
     performance = clf.score(X_test, Y_test)
     # Append the result in the list
     result_list.append(["NO_OT", performance])
 
     # Traditional Transport, nothhing supervised
-    rbotda = rBOTDA(k=0, ot_method=ot_method, wrong_cls=False,
-                    balanced_source=False, balanced_target=False,
-                    cost_supervised=False)
+    rbotda = rBOTDA(k=100, ot_method=ot_method, wrong_cls=True,
+                    balanced_source=[], balanced_target=[],
+                    cost_supervised=True)
 
     rbotda.fit_tl_supervised(Xs=Xs, Xt=Xt, ys=ys, yt=yt, clf=clf)
-    Xs_transform = rbotda.transform(Xs=X_test)
+    Xs_transform = rbotda.transform_backward(Xt=X_test)
     performance = clf.score(Xs_transform, Y_test)
     result_list.append(["OT_cost_no_sup", performance])
 
-    # Traditional Transport cost supervised
-    rbotda = rBOTDA(k=0, ot_method=ot_method, wrong_cls=False,
-                    balanced_source=False, balanced_target=False,
-                    cost_supervised=True)
-
-    rbotda.fit_tl_supervised(Xs=Xs, Xt=Xt, ys=ys, yt=yt, clf=clf)
-    Xs_transform = rbotda.transform(Xs=X_test)
-    performance = clf.score(Xs_transform, Y_test)
-    result_list.append(["OT_cost_sup", performance])
-
-    # rBOTDA, no supervised
-    rbotda = rBOTDA(k=0, ot_method=ot_method, wrong_cls=True,
-                    balanced_source=False, balanced_target=False,
-                    cost_supervised=False)
-
-    rbotda.fit_tl_supervised(Xs=Xs, Xt=Xt, ys=ys, yt=yt, clf=clf)
-    Xs_transform = rbotda.transform(Xs=X_test)
-    performance = clf.score(Xs_transform, Y_test)
-    result_list.append(["rOT_cost_no_sup", performance])
-
-    # rBOTDA, cost supervised
-    rbotda = rBOTDA(k=0, ot_method=ot_method, wrong_cls=True,
-                    balanced_source=False, balanced_target=False,
-                    cost_supervised=True)
-
-    rbotda.fit_tl_supervised(Xs=Xs, Xt=Xt, ys=ys, yt=yt, clf=clf)
-    Xs_transform = rbotda.transform(Xs=X_test)
-    performance = clf.score(Xs_transform, Y_test)
-    result_list.append(["rOT_cost_sup", performance])
-
-    # rBOTDA, no supervised
-    rbotda = rBOTDA(k=0, ot_method=ot_method, wrong_cls=True,
-                    balanced_source=[], balanced_target=[],
-                    cost_supervised=False)
-
-    rbotda.fit_tl_supervised(Xs=Xs, Xt=Xt, ys=ys, yt=yt, clf=clf)
-    Xs_transform = rbotda.transform(Xs=X_test)
-    performance = clf.score(Xs_transform, Y_test)
-    result_list.append(["rOT_all_balanced_cost_no_sup", performance])
-
-    # rBOTDA, cost supervised
-    rbotda = rBOTDA(k=0, ot_method=ot_method, wrong_cls=True,
-                    balanced_source=[], balanced_target=[],
-                    cost_supervised=True)
-
-    rbotda.fit_tl_supervised(Xs=Xs, Xt=Xt, ys=ys, yt=yt, clf=clf)
-    Xs_transform = rbotda.transform(Xs=X_test)
-    performance = clf.score(Xs_transform, Y_test)
-    result_list.append(["rOT_all_balanced_cost_sup", performance])
-
-    # rBOTDA, cost supervised
-    rbotda = rBOTDA(k=0, ot_method=ot_method, wrong_cls=True,
-                    balanced_source=False, balanced_target=[],
-                    cost_supervised=True)
-
-    rbotda.fit_tl_supervised(Xs=Xs, Xt=Xt, ys=ys, yt=yt, clf=clf)
-    Xs_transform = rbotda.transform(Xs=X_test)
-    performance = clf.score(Xs_transform, Y_test)
-    result_list.append(["rOT_cost_sup_target_balanced", performance])
-
-    # rBOTDA, cost supervised
-    rbotda = rBOTDA(k=0, ot_method=ot_method, wrong_cls=True,
-                    balanced_source=[], balanced_target=False,
-                    cost_supervised=True)
-
-    rbotda.fit_tl_supervised(Xs=Xs, Xt=Xt, ys=ys, yt=yt, clf=clf)
-    Xs_transform = rbotda.transform(Xs=X_test)
-    performance = clf.score(Xs_transform, Y_test)
-    result_list.append(["rOT2_cost_sup_source_balanced", performance])
 # %%
 _, ax = plt.subplots(1, 1, figsize=[30, 8])
 results = pd.DataFrame(result_list, columns=["method", "ACC"])

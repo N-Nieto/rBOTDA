@@ -6,9 +6,9 @@
 @email: nnieto@sinc.unl.edu.ar
 """
 from rbotda.ot_helper_functions import initialize_ot_obj
-from rbotda.ot_helper_functions import compute_cost_matrix, compute_coupling
+from rbotda.ot_helper_functions import compute_cost_matrix, compute_backward_coupling              # noqa
 from rbotda.balancing_functions import deal_with_wrong_classified_point
-from rbotda.balancing_functions import compute_balance_weights, initialize_sample_weights       # noqa
+from rbotda.balancing_functions import compute_balance_weights, initialize_uniform_weights       # noqa
 from rbotda.penalization_functions import compute_penalization
 
 
@@ -85,50 +85,48 @@ class rBOTDA():
 
         initialize_ot_obj(self)
 
-    def fit_tl(self, Xs, Xt, clf, yt=None):
-        # Fit optimal transport method with
-
+    def fit_tl(self, Xs, Xt, clf, ys):
+        # Fit optimal transport method with penalization
+        # Classifier has to be trained on Xs as in BOTDA method.
         """
         Returns
         -------
         ot_obj :  Optimal transport instance
         """
         # Check consistency
-        data_check(Xs=Xs, Xt=Xt, ys=None, yt=yt)
+        data_check(Xs=Xs, Xt=Xt, ys=ys, yt=None)
 
-        a, b = initialize_sample_weights(Xt, Xs)
-        # If target (train), labels are provided, then enter to the function
-        if (yt is not None):
+        a, b = initialize_uniform_weights(Xs=Xs, Xt=Xt)
+        # If source (train), labels are provided, then enter to the function
+        # that allows to remove the wrongly classified points in train
+        if (ys is not None) and (self.wrong_cls):
             # Deal with wrong classified point in the target domain
-            Xt, yt, a, b = deal_with_wrong_classified_point(self, a, b,
-                                                            Xt, yt, clf)
+            Xs, ys, a = deal_with_wrong_classified_point(Xs, ys, a, clf)
 
-        # Fit the object to the data
-        self.ot_obj = self.ot_obj.fit(Xs=Xs, Xt=Xt, yt=yt)
+        # Fit the object to the data in a backward way
+        self.ot_obj = self.ot_obj.fit(Xs=Xt, ys=None, Xt=Xs, yt=ys)
 
         # Change the weights of the target points with respect a penalization
-        b = compute_penalization(self, Xt, clf, b)
+        a = compute_penalization(self, a, Xs, clf)
 
         # Balance weights for Source and Target
-        a, b = compute_balance_weights(self, a, b, yt, ys=None)
-
+        a, b = compute_balance_weights(self, a, b, ys, yt=None)
         # Compute cost matrix
-        M = compute_cost_matrix(self, Xs=Xs, Xt=Xt, yt=yt, ys=None)
+        M = compute_cost_matrix(self, Xs=Xt, ys=None, Xt=Xs, yt=ys)
 
-        # Compute coupling with different OT methods
-        G0 = compute_coupling(self, a, b, M, Xs, Xt, None)
+        # Compute coupling with different OT methods in a backward way
+        G0 = compute_backward_coupling(self, a, b, M, Xs=Xs, Xt=Xt, yt=None)
 
-        # Replace the coupling with the penalized ones
+        # Replace the coupling with the penalized one
         self.ot_obj.coupling_ = G0
         self.ot_obj.mu_t = b
         self.ot_obj.mu_s = a
         self.ot_obj.cost_ = M
-
-        return self
+        return
 
     def fit_tl_supervised(self, Xs, Xt, clf, ys=None, yt=None):
-        # Fit optimal transport method with
-
+        # Fit optimal transport method with penalization
+        # Classifier has to be trained on Xs as in BOTDA method.
         """
         Returns
         -------
@@ -137,26 +135,27 @@ class rBOTDA():
         # Check consistency
         data_check(Xs=Xs, Xt=Xt, ys=ys, yt=yt)
 
-        a, b = initialize_sample_weights(Xt, Xs)
-        # If target (train), labels are provided, then enter to the function
-        if (yt is not None):
+        a, b = initialize_uniform_weights(Xs=Xs, Xt=Xt)
+        # If source (train), labels are provided, then enter to the function
+        # that allows to remove the wrongly classified points in train
+        if (ys is not None) and (self.wrong_cls):
             # Deal with wrong classified point in the target domain
-            Xt, yt, a, b = deal_with_wrong_classified_point(self, a, b,
-                                                            Xt, yt, clf)
+            Xs, ys, a = deal_with_wrong_classified_point(Xs, ys, a, clf)
 
-        # Fit the object to the data
-        self.ot_obj = self.ot_obj.fit(Xs=Xs, ys=ys, Xt=Xt, yt=yt)
+        # Fit the object to the data in a backward way
+        self.ot_obj = self.ot_obj.fit(Xs=Xt, ys=yt, Xt=Xs, yt=ys)
 
         # Change the weights of the target points with respect a penalization
-        b = compute_penalization(self, Xt, clf, b)
+        a = compute_penalization(self, a, Xs, clf)
 
-        # Balance weights for Source and Target
+        # Balance weights for Source and Target, labels are needed
         a, b = compute_balance_weights(self, a, b, ys, yt)
-        # Compute cost matrix
-        M = compute_cost_matrix(self, Xs=Xs, ys=ys, Xt=Xt, yt=yt)
 
-        # Compute coupling with different OT methods
-        G0 = compute_coupling(self, a, b, M, Xs, Xt, ys)
+        # Compute cost matrix fro backward transport
+        M = compute_cost_matrix(self, Xs=Xt, ys=yt, Xt=Xs, yt=ys)
+
+        # Compute coupling with different OT methods in a backward way
+        G0 = compute_backward_coupling(self, a, b, M, Xs=Xs, Xt=Xt, yt=yt)
 
         # Replace the coupling with the penalized one
         self.ot_obj.coupling_ = G0
@@ -166,9 +165,10 @@ class rBOTDA():
 
         return self
 
-    def transform(self, Xs):
-        # Transform data using the fitted
-        Xs_transform = self.ot_obj.transform(Xs=Xs)
+    def transform_backward(self, Xt):
+        # Transform data using the fitted OT Element.
+        # Transport samples from target to source
+        Xs_transform = self.ot_obj.transform(Xs=Xt)
         return Xs_transform
 
 # %%
