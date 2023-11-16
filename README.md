@@ -1,2 +1,2 @@
-# Balanced_Optimal_Transport
-Scrips for generate a robust Optimal Transport method
+# Robust Backwards Optimal Transport for Domain Adaptation - rBOTDA
+Scrips to generate a robust Optimal Transport method
