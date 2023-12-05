@@ -16,11 +16,11 @@ def initialize_ot_obj(self) -> ot.da.BaseTransport:
 
     elif self.ot_method in ["sinkhorn", "s"]:
         ot_obj = ot.da.SinkhornTransport(metric=self.metric,
-                                         reg_e=self.reg_e)
+                                         reg_e=self.reg)
 
     elif self.ot_method in ["sinkhorn_gl", "s_gl"]:
         ot_obj = ot.da.SinkhornL1l2Transport(metric=self.metric,
-                                             reg_e=self.reg_e,
+                                             reg_e=self.reg,
                                              reg_cl=self.eta)
 
     elif self.ot_method in ["emd_laplace", "emd_l"]:

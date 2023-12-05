@@ -102,7 +102,7 @@ class rBOTDA():
                                  For example, if [0.6, 0.4] is provided, the mass of the class 1 will sum 0.6
                                  while the ones for class 2 will sum 0.4.
 
-            reg_e (float, optional): Regularization Parameter. Defaults to 1.
+            reg (float, optional): Regularization Parameter. Defaults to 1.
                                      Only used when ot_method = "s" or "s_gl"
 
             eta (float, optional): Regularization Parameter. Defaults to 1.
