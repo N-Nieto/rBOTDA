@@ -232,6 +232,11 @@ class rBOTDA():
         self.ot_obj.mu_t = mass_train
         self.ot_obj.mu_s = mass_val
         self.ot_obj.cost_ = M
+
+        # store arrays of samples
+        self.xs_ = X_train
+        self.xt_ = X_val
+
         return
 
         # Transform data using the fitted OT Element.
