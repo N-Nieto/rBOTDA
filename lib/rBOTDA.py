@@ -5,8 +5,8 @@
 # @email: nnieto@sinc.unl.edu.ar
 
 from .ot_helper_functions import initialize_ot_obj
-from .ot_helper_functions import compute_cost_matrix, compute_backward_coupling                 # noqa
-from .balancing_functions import deal_with_wrong_classified                               # noqa
+from .ot_helper_functions import compute_cost_matrix, compute_backward_coupling         # noqa
+from .balancing_functions import deal_with_wrong_classified, subsample_set              # noqa
 from .balancing_functions import balance_samples, initialize_uniform_weights            # noqa
 from .penalization_functions import compute_penalization
 from .utilitys import naming_check, data_consistency_check
@@ -15,9 +15,8 @@ from numpy.typing import ArrayLike
 
 
 class rBOTDA():
-    """  # noqa
-    Regularized Backward optimal Transport (rBOTDA) class
-
+    """ Regularized Backward optimal Transport (rBOTDA) class
+    # noqa
     The regularization version of BOTDA has three main improvements:
 
     1) The possibility to use the already trained classifier to improve the transport.                          
@@ -36,13 +35,14 @@ class rBOTDA():
                  wrong_cls: bool = True,
                  balanced_train="auto",
                  balanced_val="auto",
+                 train_size="all",
                  reg: Optional[float] = 1,
                  eta: Optional[float] = 0.1,
                  cost_norm: Optional[bool] = None,
                  limit_max: Optional[int] = 10,
                  cost_supervised: Optional[bool] = True) -> None:
-        """ # noqa
-        Initialize the rBOTDA object.
+        """ Initialize the rBOTDA object.
+        # noqa
         Args:
             k (int): penalization strength. If k=0 no penalization applied
 
@@ -101,6 +101,12 @@ class rBOTDA():
                                  Sum of elements in list must be 1
                                  For example, if [0.6, 0.4] is provided, the mass of the class 1 will sum 0.6
                                  while the ones for class 2 will sum 0.4.
+
+            train_size (Any, optional): Control the size of the training set. Default "all"
+
+                Supported: "all" - Use all training samples
+
+                            [] - List containing the number of samples used for each class.                                 
 
             reg (float, optional): Regularization Parameter. Defaults to 1.
                                      Only used when ot_method = "s" or "s_gl"
@@ -162,6 +168,9 @@ class rBOTDA():
         self.balanced_train = balanced_train
         self.balanced_val = balanced_val
 
+        # Allows to control the train size. If "all" all samples are used.
+        # if not, a list with the number of samples by class must be provided
+        self.train_size = train_size
         self.ot_obj = initialize_ot_obj(self)
 
     def fit(self,
@@ -174,15 +183,13 @@ class rBOTDA():
         """
         Fit optimal transport method with penalization
         Classifier has to be trained on Xs as in BOTDA method.
-
+        # noqa
         Parameters:
-            X_train (ArrayLike): _description_
-            X_val (ArrayLike): _description_
-            clf (sklearn Classifier): _description_
-            y_train (ArrayLike], optional): _description_.
-            y_val (ArrayLike], optional): _description_.
-
-            Defaults to None.
+            X_train (ArrayLike): Training Samples / Domain where the classifier was trained
+            X_val (ArrayLike): Samples to be transported / This domain is the test doman
+            clf (sklearn Classifier): Already trained classifier. Sklearn classifier instance
+            y_train (ArrayLike], optional): Train labels. Default: not provided
+            y_val (ArrayLike], optional): Validation labels.  Default: not provided
 
         Returns
         -------
@@ -205,14 +212,15 @@ class rBOTDA():
                                                                       mass_train,                   # noqa
                                                                       clf)
 
-        # Fit the object to the data in a backward way
-        self.ot_obj = self.ot_obj.fit(Xs=X_val, ys=y_val,
-                                      Xt=X_train, yt=y_train)
-
         # Change the weights of the target points with respect a penalization
         mass_train = compute_penalization(self.penalized_type, self.k,
                                           mass_train,
                                           X_train, clf)
+
+        if self.train_size != "all":
+            X_train, y_train, mass_train = subsample_set(X_train, y_train,
+                                                         mass_train,
+                                                         self.train_size)
 
         # Change the weights of the target points with respect a penalization
         mass_train = balance_samples(self.balanced_train, mass_train, y_train)
@@ -229,18 +237,16 @@ class rBOTDA():
 
         # Replace the coupling with the penalized one
         self.ot_obj.coupling_ = G0
-        self.ot_obj.mu_t = mass_train
-        self.ot_obj.mu_s = mass_val
         self.ot_obj.cost_ = M
 
+        self.ot_obj.mu_t = mass_train
+        self.ot_obj.mu_s = mass_val
+
         # store arrays of samples
-        self.xs_ = X_train
-        self.xt_ = X_val
+        self.ot_obj.xt_ = X_train
+        self.ot_obj.xs_ = X_val
 
         return
-
-        # Transform data using the fitted OT Element.
-        # Transport samples from target to source
 
     def transform(self, X: ArrayLike) -> ArrayLike:
         """
@@ -255,3 +261,5 @@ class rBOTDA():
         # Transport samples from target to source using the fitted OT Element
         X_transformed = self.ot_obj.transform(Xs=X)
         return X_transformed
+
+# %%

@@ -159,3 +159,44 @@ def deal_with_wrong_classified(X_train: ArrayLike, y_train: ArrayLike,
             mass_train = np.ones(((X_train.shape[0]),)) / (X_train.shape[0])
 
     return X_train, y_train, mass_train
+
+
+def subsample_set(X: np.ndarray, y: np.ndarray,
+                  mass: np.ndarray, train_size: List[int]
+                  ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """ Extracts data points with the highest mass for each class.
+
+    Parameters:
+    - X (np.ndarray): Feature matrix.
+    - y (np.ndarray): Array of class labels.
+    - mass (np.ndarray): Array of mass values for each data point.
+    - train_size (List[int]): List specifying the number of data points to be extracted for each class.
+
+    Returns:
+    - Tuple[np.ndarray, np.ndarray, np.ndarray]: Extracted data (X, y, mass).
+    # noqa 
+    """
+    # Dimension checks
+    unique_classes = np.unique(y)
+
+    for class_label, size in zip(unique_classes, train_size):
+        mask = (y == class_label)
+        if size > mask.sum():
+            raise ValueError(" Not enoght samples in class " + str(class_label) + ". Requested size: " + (str(size) + " Available samples: " + str(mask.sum()))) # noqa
+
+    # Initialization
+    X_f = []
+    y_f = []
+    mass_f = []
+
+    for class_label, size in zip(unique_classes, train_size):
+        mask = (y == class_label)
+        # Get indices of highest mass values
+        sorted_indices = np.argsort(mass[mask])[::-1]
+        selected_indices = np.where(mask)[0][sorted_indices][:size]
+
+        X_f.extend(X[selected_indices])
+        y_f.extend(y[selected_indices])
+        mass_f.extend(mass[selected_indices])
+
+    return np.array(X_f), np.array(y_f), np.array(mass_f)
