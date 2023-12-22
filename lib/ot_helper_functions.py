@@ -12,19 +12,22 @@ def initialize_ot_obj(self) -> ot.da.BaseTransport:
         ot.da.BaseTransport: Initialized optimal transport object.
     """
     if self.ot_method == "emd":
-        ot_obj = ot.da.EMDTransport(metric=self.metric)
+        ot_obj = ot.da.EMDTransport(metric=self.metric, max_iter=self.max_iter)
 
     elif self.ot_method in ["sinkhorn", "s"]:
         ot_obj = ot.da.SinkhornTransport(metric=self.metric,
-                                         reg_e=self.reg)
+                                         reg_e=self.reg, 
+                                         max_iter=self.max_iter)
 
     elif self.ot_method in ["sinkhorn_gl", "s_gl"]:
         ot_obj = ot.da.SinkhornL1l2Transport(metric=self.metric,
                                              reg_e=self.reg,
-                                             reg_cl=self.eta)
+                                             reg_cl=self.eta, 
+                                             max_iter=self.max_iter)
 
     elif self.ot_method in ["emd_laplace", "emd_l"]:
-        ot_obj = ot.da.EMDLaplaceTransport(metric=self.metric)
+        ot_obj = ot.da.EMDLaplaceTransport(metric=self.metric, 
+                                           max_iter=self.max_iter)
     else:
         raise RuntimeError("OT method not supported")
 
@@ -111,7 +114,7 @@ def compute_backward_coupling(self,
         # Sinkhorn coupling with Group L1L2 regularization
         G0 = ot.da.sinkhorn_l1l2_gl(a=mass_val, labels_a=y_val,
                                     b=mass_train, M=M,
-                                    reg=self.reg, eta=self.eta)
+                                    reg=self.reg, eta=self.eta, numItermax=self.max_iter)
 
     elif self.ot_method in ["emd_laplace", "emd_l"]:
         # EMD coupling with Laplace regularization

@@ -38,6 +38,7 @@ class rBOTDA():
                  balanced_val="auto",
                  reg: Optional[float] = 1,
                  eta: Optional[float] = 0.1,
+                 max_iter: Optional[int] = 10,
                  cost_norm: Optional[bool] = None,
                  limit_max: Optional[int] = 10,
                  cost_supervised: Optional[bool] = True) -> None:
@@ -108,7 +109,7 @@ class rBOTDA():
             eta (float, optional): Regularization Parameter. Defaults to 1.
 
                                    Only used when ot_method = "s_gl" or "emd_l"
-
+            max_iter (int, optional): (from POT) the maximum numer of iteration before stopping the optimization procedure
             cost_norm (bool, optional): Normalize the cost matrix
                                         Defaults to None.
 
@@ -142,6 +143,7 @@ class rBOTDA():
         self.cost_norm = cost_norm
         self.limit_max = limit_max
         self.cost_supervised = cost_supervised
+        self.max_iter = max_iter
         # Initialize any hyperparameters for penalization
         # Type of penalization (Distance or classifier probability)
         self.penalized_type = penalized_type
