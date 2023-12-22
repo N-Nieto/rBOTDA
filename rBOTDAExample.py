@@ -16,7 +16,7 @@ np.random.seed(random_state)
 X, Y = load_synthetic_data(unrepresentative_features=0)
 # OT variables
 # Classifier is trained on SOURCE, and learn to transpor from target to source
-Balance_train = [300, 300]  # Max 100 trials for each class
+Balance_train = [100, 100]  # Max 100 trials for each class
 Balance_val = [100, 100]  # Max 100 trials for each class
 Balance_test = [100, 100]    # Max 100 trials for each class
 # OT method
@@ -38,7 +38,7 @@ for kv in range(n_KF):
     X_tr, X_test_whole, Y_tr, Y_test_whole = train_test_split(X, Y,
                                                               test_size=0.4,
                                                               shuffle=True,
-                                                              random_state=1)
+                                                              random_state=kv)
 
     # Costume function to unbalance the for each class
     X_train, Y_train, X_val_not_used, Y_val_not_used = split_synthetic_data_unbalanced(     # noqa
@@ -60,11 +60,12 @@ for kv in range(n_KF):
     # Append the result in the list
     result_list.append(["NO_OT", performance])
 
-    # BOTDA
+    # # BOTDA
     rbotda = rBOTDA(k=0, ot_method=ot_method, wrong_cls=False,
                     balanced_train=None, balanced_val=None,
                     cost_supervised=True,
-                    train_size=[20, 20]
+                    train_size=[50, 10]
+
                     )
 
     rbotda.fit(X_train=X_train, X_val=X_val,
@@ -75,17 +76,19 @@ for kv in range(n_KF):
     result_list.append(["BOTDA", performance])
 
     # rBOTDA
-    rbotda = rBOTDA(k=1, ot_method=ot_method, wrong_cls=True,
-                    balanced_train="auto", balanced_val="auto",
-                    cost_supervised=True,
-                    train_size=[70, 70]
-                    )
+    rbotda2 = rBOTDA(k=0, ot_method=ot_method, wrong_cls=True,
+                     cost_supervised=True,
+                     train_size=[40, 10]
+                     )
 
-    rbotda.fit(X_train=X_train, X_val=X_val,
-               y_train=Y_train, y_val=Y_val, clf=clf)
-    X_test_transform = rbotda.transform(X=X_test)
+    rbotda2.fit(X_train=X_train, X_val=X_val,
+                y_train=Y_train, y_val=Y_val, clf=clf)
+    X_test_transform = rbotda2.transform(X=X_test)
     performance = clf.score(X_test_transform, Y_test)
     result_list.append(["rBOTDA", performance])
+
+    # plt.imshow(rbotda.ot_obj.coupling_-rbotda2.ot_obj.coupling_)
+    # plt.plot(rbotda.ot_obj.mu_t-rbotda2.ot_obj.mu_t)
 
 
 # %% Plots

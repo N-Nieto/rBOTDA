@@ -203,6 +203,7 @@ class rBOTDA():
 
         mass_train, mass_val = initialize_uniform_weights(X_train=X_train,
                                                           X_val=X_val)
+
         # If source (train), labels are provided, then enter to the function
         # that allows to remove the wrongly classified points in train
         if (self.wrong_cls):
@@ -224,6 +225,7 @@ class rBOTDA():
 
         # Change the weights of the target points with respect a penalization
         mass_train = balance_samples(self.balanced_train, mass_train, y_train)
+
         mass_val = balance_samples(self.balanced_val, mass_val, y_val)
 
         # Compute cost matrix

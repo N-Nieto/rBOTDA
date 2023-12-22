@@ -1,5 +1,6 @@
 import numpy as np
 from numpy.typing import ArrayLike
+from sklearn.base import ClassifierMixin
 
 
 def distance_to_hyperplane(X: ArrayLike, clf: object) -> ArrayLike:
@@ -88,8 +89,9 @@ def Proba_matrix(X: ArrayLike, clf: object, k: int) -> np.ndarray:
     return penalization
 
 
-def compute_penalization(penalized_type: str, k: int, a: ArrayLike,
-                         X_train: ArrayLike, clf: object) -> np.ndarray:
+def compute_penalization(penalized_type: str, k: int, mass: ArrayLike,
+                         X_train: ArrayLike,
+                         clf: ClassifierMixin) -> np.ndarray:
     """
     Compute the penalization with respect to the classifier.
     The penalization could be inversely proportional to the distance
@@ -115,6 +117,6 @@ def compute_penalization(penalized_type: str, k: int, a: ArrayLike,
         raise Exception("Penalization not supported")
 
     # Change the sample weight proportionally to the computed score
-    a = np.dot(a, penalization)
+    mass = np.dot(mass, penalization)
 
-    return a
+    return mass
