@@ -35,7 +35,7 @@ def naming_check(ot_method: str,
         RuntimeError("Invalid OT method")
 
     if penalized_type not in ["distance", "d", "probability", "proba", "p"]:
-        RuntimeError("Penalized type")
+        RuntimeError("Invalid penalized type")
 
 
 def data_consistency_check(X_train: ArrayLike,

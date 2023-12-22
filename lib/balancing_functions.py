@@ -5,11 +5,11 @@ from sklearn.base import ClassifierMixin
 
 
 def balance_weights(y: ArrayLike, weights: ArrayLike,
-                    balance: List[Union[int, float]] = []) -> np.ndarray:
+                    balance: List[Union[int, float]]) -> np.ndarray:
     """
     Balance the weights of samples based on
     the specified balance strategy for different classes.
-
+º
     Parameters:
     - y (ArrayLike): Target labels for class-specific balancing.
     - weights (ArrayLike): Input weights to be balanced.
@@ -21,9 +21,8 @@ def balance_weights(y: ArrayLike, weights: ArrayLike,
     """
     # Get unique classes from labels
     classes = np.unique(y)
-
     if balance == "auto":
-        # Uniform relevance for each class
+        # All classes sum the same
         balance = 1 / len(classes) * np.ones(classes.shape)
     elif not (sum(balance) == 1):
         raise ValueError("Relevance vector needs to sum to 1")
@@ -81,7 +80,7 @@ def initialize_uniform_weights(X_train: ArrayLike,
 
 
 def balance_samples(balance: Union[str, List[Union[int, float]]],
-                    samples: ArrayLike, y: ArrayLike) -> np.ndarray:
+                    mass: ArrayLike, y: ArrayLike) -> np.ndarray:
     """
     Balance the weights of samples based on the specified balance strategy.
 
@@ -89,7 +88,7 @@ def balance_samples(balance: Union[str, List[Union[int, float]]],
     - balance ([str or List) Balance strategy.
                 Can be "auto" for uniform relevance for each class
                 or a list of weights.
-    - samples (ArrayLike): Input weights to be balanced.
+    - madd (ArrayLike): Input weights to be balanced.
     - y (ArrayLike): Target labels for class-specific balancing.
 
     Returns:
@@ -97,27 +96,26 @@ def balance_samples(balance: Union[str, List[Union[int, float]]],
     """
 
     if balance is None:
-        samples = samples
+        balanced_sampes = mass
 
     # If "auto" use uniform relevance for each classs
     elif (balance == "auto"):
         if y is not None:
             # Check the y was provided for this type of balancing
-            balanced_sampes = balance_weights(y, samples, balance)
+            balanced_sampes = balance_weights(y, mass, balance)
         else:
             ValueError("label must be provided for balancing")
     # If the first element is int or float
     elif isinstance(balance[0], (int, float)):
         if y is not None:
-            balanced_sampes = balance_weights(y, samples, balance)
+            balanced_sampes = balance_weights(y, mass, balance)
         else:
             ValueError("label must be provided for balancing")
     else:
         raise Exception("Balance target not supported")
 
     # In any case, make sure the samples sum is 1.
-    balanced_sampes = samples/sum(samples)
-
+    balanced_sampes = balanced_sampes/sum(balanced_sampes)
     return balanced_sampes
 
 
@@ -159,3 +157,44 @@ def deal_with_wrong_classified(X_train: ArrayLike, y_train: ArrayLike,
             mass_train = np.ones(((X_train.shape[0]),)) / (X_train.shape[0])
 
     return X_train, y_train, mass_train
+
+
+def subsample_set(X: np.ndarray, y: np.ndarray,
+                  mass: np.ndarray, train_size: List[int]
+                  ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """ Extracts data points with the highest mass for each class.
+
+    Parameters:
+    - X (np.ndarray): Feature matrix.
+    - y (np.ndarray): Array of class labels.
+    - mass (np.ndarray): Array of mass values for each data point.
+    - train_size (List[int]): List specifying the number of data points to be extracted for each class.
+
+    Returns:
+    - Tuple[np.ndarray, np.ndarray, np.ndarray]: Extracted data (X, y, mass).
+    # noqa 
+    """
+    # Dimension checks
+    unique_classes = np.unique(y)
+
+    for class_label, size in zip(unique_classes, train_size):
+        mask = (y == class_label)
+        if size > mask.sum():
+            raise ValueError(" Not enoght samples in class " + str(class_label) + ". Requested size: " + (str(size) + " Available samples: " + str(mask.sum()))) # noqa
+
+    # Initialization
+    X_f = []
+    y_f = []
+    mass_f = []
+
+    for class_label, size in zip(unique_classes, train_size):
+        mask = (y == class_label)
+        # Get indices of highest mass values
+        sorted_indices = np.argsort(mass[mask])[::-1]
+        selected_indices = np.where(mask)[0][sorted_indices][:size]
+
+        X_f.extend(X[selected_indices])
+        y_f.extend(y[selected_indices])
+        mass_f.extend(mass[selected_indices])
+
+    return np.array(X_f), np.array(y_f), np.array(mass_f)

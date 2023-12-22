@@ -31,6 +31,10 @@ def initialize_ot_obj(self) -> ot.da.BaseTransport:
     else:
         raise RuntimeError("OT method not supported")
 
+    # Pre fit dimension Allows to speed up fiting time
+    Xs = np.random.rand(2, 2)
+    ot_obj.fit(Xs=Xs, Xt=Xs)
+
     return ot_obj
 
 

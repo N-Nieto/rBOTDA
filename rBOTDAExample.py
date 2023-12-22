@@ -14,11 +14,10 @@ np.random.seed(random_state)
 # %%
 # #### Variables
 X, Y = load_synthetic_data(unrepresentative_features=0)
-print(X.shape)
 # OT variables
 # Classifier is trained on SOURCE, and learn to transpor from target to source
-Balance_train = [400, 200]  # Max 100 trials for each class
-Balance_val = [100, 200]  # Max 100 trials for each class
+Balance_train = [100, 100]  # Max 100 trials for each class
+Balance_val = [100, 100]  # Max 100 trials for each class
 Balance_test = [100, 100]    # Max 100 trials for each class
 # OT method
 ot_method = "emd"
@@ -61,10 +60,13 @@ for kv in range(n_KF):
     # Append the result in the list
     result_list.append(["NO_OT", performance])
 
-    # BOTDA
+    # # BOTDA
     rbotda = rBOTDA(k=0, ot_method=ot_method, wrong_cls=False,
                     balanced_train=None, balanced_val=None,
-                    cost_supervised=True)
+                    cost_supervised=True,
+                    train_size=[50, 10]
+
+                    )
 
     rbotda.fit(X_train=X_train, X_val=X_val,
                y_train=Y_train, y_val=Y_val, clf=clf)
@@ -74,16 +76,20 @@ for kv in range(n_KF):
     result_list.append(["BOTDA", performance])
 
     # rBOTDA
-    rbotda = rBOTDA(k=1, ot_method=ot_method, wrong_cls=True,
-                    balanced_train="auto", balanced_val="auto",
-                    cost_supervised=True)
+    rbotda2 = rBOTDA(k=0, ot_method=ot_method, wrong_cls=True,
+                     cost_supervised=True,
+                     train_size=[40, 10]
+                     )
 
-    rbotda.fit(X_train=X_train, X_val=X_val,
-               y_train=Y_train, y_val=Y_val, clf=clf)
-
-    X_test_transform = rbotda.transform(X=X_test)
+    rbotda2.fit(X_train=X_train, X_val=X_val,
+                y_train=Y_train, y_val=Y_val, clf=clf)
+    X_test_transform = rbotda2.transform(X=X_test)
     performance = clf.score(X_test_transform, Y_test)
     result_list.append(["rBOTDA", performance])
+
+    # plt.imshow(rbotda.ot_obj.coupling_-rbotda2.ot_obj.coupling_)
+    # plt.plot(rbotda.ot_obj.mu_t-rbotda2.ot_obj.mu_t)
+
 
 # %% Plots
 _, ax = plt.subplots(1, 1, figsize=[10, 8])
