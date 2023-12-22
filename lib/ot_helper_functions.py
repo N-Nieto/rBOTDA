@@ -33,7 +33,8 @@ def initialize_ot_obj(self) -> ot.da.BaseTransport:
 
     # Pre fit dimension Allows to speed up fiting time
     Xs = np.random.rand(2, 2)
-    ot_obj.fit(Xs=Xs, Xt=Xs)
+    ys = np.zeros(2)
+    ot_obj.fit(Xs=Xs, Xt=Xs, ys=ys)
 
     return ot_obj
 
